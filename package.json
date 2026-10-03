@@ -1,0 +1,28 @@
+{
+  "name": "color-grid-puzzle",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "An offline-first color grid puzzle game for Android and the web.",
+  "scripts": {
+    "start": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test",
+    "android:sync": "npm run build && cap sync android",
+    "android:debug": "npm run android:sync && cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor-community/admob": "^8.1.0",
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/local-notifications": "^8.3.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
+    "vite": "^7.1.12"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}

@@ -1,0 +1,93 @@
+.game-screen { gap: 12px; }
+.game-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.game-head__actions { display: flex; align-items: center; gap: 7px; }
+.game-head__actions svg { display: block; width: 21px; height: 21px; }
+.game-heading { display: grid; gap: 2px; text-align: center; }
+.game-heading strong { font-size: 1.05rem; }
+.game-heading small { color: var(--muted); font-size: 0.72rem; font-weight: 700; }
+.game-stats { display: flex; justify-content: center; gap: 8px; }
+.game-status { display: flex; min-height: 25px; align-items: center; justify-content: center; color: var(--muted); font-size: 0.82rem; font-weight: 700; text-align: center; }
+.photo-reference { display: grid; width: 100%; justify-items: center; gap: 5px; margin: 0; text-align: center; }
+.photo-reference figcaption { display: flex; align-items: baseline; gap: 9px; }
+.photo-reference__image { display: block; width: min(100%, 420px); height: clamp(190px, 28dvh, 260px); object-fit: contain; object-position: center; border-radius: 0; background: rgba(23, 60, 69, 0.06); }
+.tutorial-reference { display: block; width: 100%; height: min(19dvh, 150px); object-fit: contain; border-radius: 10px; }
+.board-wrap { display: grid; flex: 1; place-items: center; min-height: 0; }
+.board {
+  display: grid;
+  width: min(100%, min(58dvh, calc(100dvh - 320px), 440px));
+  aspect-ratio: 1;
+  grid-template-columns: repeat(var(--grid-size), minmax(0, 1fr));
+  gap: clamp(4px, 1.5vw, 8px);
+  padding: clamp(9px, 2.4vw, 14px);
+  border: 1px solid rgba(23, 60, 69, 0.1);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface), transparent 30%);
+  box-shadow: var(--shadow);
+  touch-action: manipulation;
+}
+.board--sliding { max-width: min(100%, 440px); }
+.board.board--sliding { width: min(100%, min(39dvh, 440px)); gap: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.tile {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  place-items: center;
+  border: 0;
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1;
+  border-radius: clamp(5px, 1.6vw, 9px);
+  box-shadow: 0 2px 5px rgba(23, 60, 69, 0.18);
+  cursor: pointer;
+  transition: transform 100ms ease, background-color 170ms ease, filter 160ms ease;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.tile:not(.slide-tile):active { transform: scale(0.92); }
+.slide-tile, .photo-piece { background-color: #d5dfd7; background-image: var(--piece-image); background-position: var(--piece-x) var(--piece-y); background-size: 400% 400%; background-repeat: no-repeat; }
+.slide-tile { padding: 0; border-radius: 0; box-shadow: none; transition: transform 100ms ease, filter 140ms ease; }
+.tile--preview { z-index: 1; outline: 3px solid white; outline-offset: -5px; filter: brightness(1.15); }
+.tile--destination { z-index: 1; box-shadow: inset 0 0 0 4px var(--warning), 0 0 0 2px white; }
+.tile--destination::after { position: absolute; top: 3px; right: 3px; display: grid; width: 21px; height: 21px; place-items: center; border-radius: 50%; background: var(--warning); color: #27332a; content: "⌂"; font-size: 0.85rem; font-weight: 900; }
+.empty-space { display: grid; aspect-ratio: 1; place-items: center; border: 1px dashed var(--line); border-radius: 0; background: transparent; color: var(--muted); }
+.empty-space::after { content: "↙"; font-size: clamp(1rem, 6vw, 1.7rem); opacity: 0.62; }
+.empty-space--target { outline: 3px solid var(--warning); outline-offset: -4px; }
+.photo-board { display: grid; width: min(100%, 440px); aspect-ratio: 1; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; padding: 0; border-radius: 0; background: transparent; }
+.photo-board--mini { width: min(170px, 48vw); gap: 2px; padding: 3px; }
+.photo-board .photo-piece { min-width: 0; min-height: 0; border-radius: 0; box-shadow: none; }
+.photo-board .empty-space { min-width: 0; min-height: 0; border-radius: 0; }
+.photo-board--mini .empty-space::after { font-size: 0.8rem; }
+.game-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.game-controls .btn { padding-inline: 7px; font-size: 0.79rem; }
+.result-hero { display: grid; justify-items: center; gap: 10px; padding: 24px 16px; border-radius: 20px; background: var(--surface); text-align: center; }
+.result-hero__mark { display: grid; width: 72px; height: 72px; place-items: center; border-radius: 24px; background: var(--success-soft); color: var(--success); font-size: 2.3rem; transform: rotate(-5deg); }
+.result-score { font-size: 2rem; font-weight: 950; }
+.splash-brand .logo-lockup { flex-direction: column; gap: 20px; }
+.splash-brand .logo-ball { width: 112px; height: 120px; flex-basis: 112px; }
+.splash-brand .logo-word { font-size: 2.25rem; line-height: 1; text-align: center; }
+.splash-brand .logo-word small { margin-top: 9px; font-size: 0.72rem; }
+.about-brand-ball { display: block; width: 72px; height: 76px; object-fit: contain; }
+.hero-home { display: flex; flex-direction: column; gap: 22px; padding-top: 9vh; }
+.home-brand { display: flex; align-items: center; gap: 14px; }
+.home-hero-ball { display: block; width: 90px; height: 90px; flex: 0 0 90px; }
+.home-wordmark { margin: 0; font-size: clamp(2.7rem, 14vw, 4rem); font-weight: 950; line-height: 0.88; }
+.home-wordmark span { display: block; color: var(--primary); }
+.home-tagline { max-width: 250px; margin: 11px 0 0; color: var(--muted); line-height: 1.4; }
+.home-level-card { display: grid; gap: 13px; padding: 16px; border-radius: 18px; background: var(--card-background); color: var(--card-foreground); }
+.home-level-card .progress-track { background: rgba(255,255,255,.2); }
+.home-level-card .progress-track > i { background: var(--warning); }
+.home-level-card .eyebrow { color: var(--card-muted); }
+.home-level-meta { display: flex; justify-content: space-between; font-weight: 800; }
+.tutorial-steps { display: grid; gap: 8px; margin: 0; padding-left: 23px; line-height: 1.35; }
+
+@media (max-height: 660px) {
+  .screen { min-height: calc(100dvh - 32px); }
+  .game-screen { gap: 6px; }
+  .photo-reference__image { height: clamp(132px, 22dvh, 160px); }
+  .board.board--sliding { width: min(100%, min(32dvh, 360px)); }
+  .game-controls .btn { min-height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+}
