@@ -2,7 +2,7 @@
 
 Last updated: September 28, 2026
 
-Baller Grid is developed by BeMs. Contact: [Developer contact email]. Replace this placeholder with a monitored address before distribution.
+Baller Grid is developed by BeMs. Contact: aondoalumun27@gmail.com.
 
 ## Information Stored on the Device
 
