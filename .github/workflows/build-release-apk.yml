@@ -10,59 +10,181 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     env:
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
       KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
       KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
       ADMOB_APP_ID: ${{ vars.ADMOB_APP_ID }}
       VITE_ADS_LIVE: ${{ vars.VITE_ADS_LIVE }}
       VITE_ADMOB_APP_ID: ${{ vars.VITE_ADMOB_APP_ID }}
       VITE_BANNER_AD_ID: ${{ vars.VITE_BANNER_AD_ID }}
       VITE_INTERSTITIAL_AD_ID: ${{ vars.VITE_INTERSTITIAL_AD_ID }}
       VITE_REWARDED_AD_ID: ${{ vars.VITE_REWARDED_AD_ID }}
+
     steps:
+
+      # ---------------------------------------------------------
+      # CHECKOUT
+      # ---------------------------------------------------------
       - name: Checkout
         uses: actions/checkout@v4
+
+      # ---------------------------------------------------------
+      # GET ANDROID SIGNING CERTIFICATE SHA-256
+      # ---------------------------------------------------------
+      - name: Get Android signing certificate SHA-256
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+
+          echo "Checking Android signing configuration..."
+
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "ERROR: ANDROID_KEYSTORE_BASE64 is empty."
+            exit 1
+          fi
+
+          if [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "ERROR: KEYSTORE_PASSWORD is empty."
+            exit 1
+          fi
+
+          if [ -z "$KEY_ALIAS" ]; then
+            echo "ERROR: KEY_ALIAS is empty."
+            exit 1
+          fi
+
+          KEYSTORE_PATH="$RUNNER_TEMP/signing-key.jks"
+
+          echo "Decoding signing keystore..."
+
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+
+          if [ ! -s "$KEYSTORE_PATH" ]; then
+            echo "ERROR: Failed to create keystore file."
+            exit 1
+          fi
+
+          echo "Reading signing certificate..."
+
+          keytool -list -v \
+            -keystore "$KEYSTORE_PATH" \
+            -alias "$KEY_ALIAS" \
+            -storepass "$KEYSTORE_PASSWORD" \
+            | grep -i "SHA256"
+
+          echo "SHA-256 certificate fingerprint retrieved successfully."
+
+          rm -f "$KEYSTORE_PATH"
+
+      # ---------------------------------------------------------
+      # NODE
+      # ---------------------------------------------------------
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
+      # ---------------------------------------------------------
+      # JAVA
+      # ---------------------------------------------------------
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
+
+      # ---------------------------------------------------------
+      # ANDROID SDK
+      # ---------------------------------------------------------
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+
+      # ---------------------------------------------------------
+      # ANDROID PACKAGES
+      # ---------------------------------------------------------
       - name: Install Android packages
-        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+        run: |
+          sdkmanager "platform-tools" \
+            "platforms;android-36" \
+            "build-tools;36.0.0"
+
+      # ---------------------------------------------------------
+      # NPM DEPENDENCIES
+      # ---------------------------------------------------------
       - name: Install dependencies
         run: npm ci
+
+      # ---------------------------------------------------------
+      # TEST GAME
+      # ---------------------------------------------------------
       - name: Test game
         run: npm test
+
+      # ---------------------------------------------------------
+      # BUILD PRODUCTION WEB APP
+      # ---------------------------------------------------------
       - name: Build production web app for signed release
         if: env.ANDROID_KEYSTORE_BASE64 != '' && env.KEYSTORE_PASSWORD != '' && env.KEY_ALIAS != '' && env.KEY_PASSWORD != ''
         run: npm run build
+
+      # ---------------------------------------------------------
+      # BUILD TEST-AD WEB APP IF SIGNING IS NOT CONFIGURED
+      # ---------------------------------------------------------
       - name: Build test-ad web app for debug fallback
         if: env.ANDROID_KEYSTORE_BASE64 == '' || env.KEYSTORE_PASSWORD == '' || env.KEY_ALIAS == '' || env.KEY_PASSWORD == ''
         env:
           VITE_ADS_LIVE: 'false'
         run: npm run build
+
+      # ---------------------------------------------------------
+      # CAPACITOR SYNC
+      # ---------------------------------------------------------
       - name: Sync Capacitor
         run: npx cap sync android
+
+      # ---------------------------------------------------------
+      # CONFIGURE ADMOB APP ID
+      # ---------------------------------------------------------
       - name: Configure app ID for Android manifest
         if: env.ADMOB_APP_ID != '' && env.ANDROID_KEYSTORE_BASE64 != '' && env.KEYSTORE_PASSWORD != '' && env.KEY_ALIAS != '' && env.KEY_PASSWORD != ''
-        run: echo "ADMOB_APP_ID=$ADMOB_APP_ID" >> android/gradle.properties
+        run: |
+          echo "ADMOB_APP_ID=$ADMOB_APP_ID" >> android/gradle.properties
+
+      # ---------------------------------------------------------
+      # BUILD AND SIGN RELEASE APK
+      # ---------------------------------------------------------
       - name: Build and sign release APK
         if: env.ANDROID_KEYSTORE_BASE64 != '' && env.KEYSTORE_PASSWORD != '' && env.KEY_ALIAS != '' && env.KEY_PASSWORD != ''
         run: |
           set -euo pipefail
+
           KEYSTORE_PATH="$RUNNER_TEMP/color-grid-upload.jks"
+
+          echo "Decoding Android signing keystore..."
+
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+
+          if [ ! -s "$KEYSTORE_PATH" ]; then
+            echo "ERROR: Keystore file was not created."
+            exit 1
+          fi
+
+          echo "Building unsigned release APK..."
+
           cd android
+
           ./gradlew assembleRelease
+
+          echo "Signing release APK..."
+
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" sign \
             --ks "$KEYSTORE_PATH" \
             --ks-key-alias "$KEY_ALIAS" \
@@ -70,12 +192,28 @@ jobs:
             --key-pass "env:KEY_PASSWORD" \
             --out "$GITHUB_WORKSPACE/color-grid-puzzle-release.apk" \
             app/build/outputs/apk/release/app-release-unsigned.apk
+
+          echo "Release APK signed successfully."
+
           rm -f "$KEYSTORE_PATH"
+
+      # ---------------------------------------------------------
+      # BUILD DEBUG APK IF SIGNING IS NOT CONFIGURED
+      # ---------------------------------------------------------
       - name: Build debug APK when signing is not configured
         if: env.ANDROID_KEYSTORE_BASE64 == '' || env.KEYSTORE_PASSWORD == '' || env.KEY_ALIAS == '' || env.KEY_PASSWORD == ''
         run: |
-          cd android && ADMOB_APP_ID=ca-app-pub-3940256099942544~3347511713 ./gradlew assembleDebug
-          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/color-grid-puzzle-debug.apk"
+          cd android
+
+          ADMOB_APP_ID=ca-app-pub-3940256099942544~3347511713 \
+          ./gradlew assembleDebug
+
+          cp app/build/outputs/apk/debug/app-debug.apk \
+            "$GITHUB_WORKSPACE/color-grid-puzzle-debug.apk"
+
+      # ---------------------------------------------------------
+      # UPLOAD SIGNED RELEASE APK
+      # ---------------------------------------------------------
       - name: Upload signed release APK
         if: env.ANDROID_KEYSTORE_BASE64 != '' && env.KEYSTORE_PASSWORD != '' && env.KEY_ALIAS != '' && env.KEY_PASSWORD != ''
         uses: actions/upload-artifact@v4
@@ -84,6 +222,10 @@ jobs:
           path: color-grid-puzzle-release.apk
           if-no-files-found: error
           retention-days: 14
+
+      # ---------------------------------------------------------
+      # UPLOAD DEBUG APK
+      # ---------------------------------------------------------
       - name: Upload debug fallback APK
         if: env.ANDROID_KEYSTORE_BASE64 == '' || env.KEYSTORE_PASSWORD == '' || env.KEY_ALIAS == '' || env.KEY_PASSWORD == ''
         uses: actions/upload-artifact@v4
